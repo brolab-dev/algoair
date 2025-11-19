@@ -1,0 +1,182 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <DHT.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+#define DHTPIN 15
+#define DHTTYPE DHT22
+#define LED_PIN 2
+
+// WiFi credentials (Wokwi WiFi simulation)
+const char* ssid = "Wokwi-GUEST";
+const char* password = "";
+
+// Simple HTTP server endpoint
+// Your Mac's IP address: 192.168.50.101
+const char* serverUrl = "http://192.168.50.101:3000/api/airquality";
+
+// Alternative: Use Firebase (uncomment to use)
+// const char* firebaseHost = "https://YOUR-PROJECT-ID.firebaseio.com";
+// const char* firebasePath = "/airquality/sensor1.json";
+// const char* firebaseAuth = "";
+
+// Use 20 columns and 4 rows for LCD2004
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+DHT dht(DHTPIN, DHTTYPE);
+
+unsigned long lastSendTime = 0;
+const unsigned long sendInterval = 60000; // Send data every 1 minute
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  lcd.init();
+  lcd.backlight();
+  pinMode(LED_PIN, OUTPUT);
+
+  lcd.setCursor(0, 0);
+  lcd.print("Smart Env System");
+  lcd.setCursor(0, 1);
+  lcd.print("Connecting WiFi...");
+
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi Connected!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    lcd.setCursor(0, 2);
+    lcd.print("WiFi: Connected");
+    delay(2000);
+  } else {
+    Serial.println("\nWiFi Connection Failed!");
+    lcd.setCursor(0, 2);
+    lcd.print("WiFi: Failed");
+    delay(2000);
+  }
+
+  lcd.clear();
+}
+
+void loop() {
+  float temp = dht.readTemperature();
+  float hum = dht.readHumidity();
+
+  // simulated additional sensors (replace with real sensors later)
+  int gas = random(400, 800);
+  int noise = random(40, 90);
+
+  String status = "NORMAL";
+
+  // Threshold logic
+  if (gas > 700 || noise > 80 || temp > 40.0) {
+    status = "DANGER";
+    digitalWrite(LED_PIN, HIGH);
+  } else if ((gas > 500 && gas <= 700) || (noise > 60 && noise <= 80) || (temp > 35.0 && temp <= 40.0)) {
+    status = "WARNING";
+    digitalWrite(LED_PIN, HIGH);
+  } else {
+    status = "NORMAL";
+    digitalWrite(LED_PIN, LOW);
+  }
+
+  // Display using 4 lines of the 20x4 LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Temp: ");
+  lcd.print(temp, 1);
+  lcd.print(" C   Hum: ");
+  lcd.print(hum, 0);
+  lcd.print("%");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Gas: ");
+  lcd.print(gas);
+  lcd.print(" ppm");
+
+  lcd.setCursor(0, 2);
+  lcd.print("Noise: ");
+  lcd.print(noise);
+  lcd.print(" dB");
+
+  lcd.setCursor(0, 3);
+  lcd.print("Status: ");
+  lcd.print(status);
+
+  // Serial output for debug
+  Serial.println("---------------");
+  Serial.print("Temp: "); Serial.print(temp); Serial.println(" °C");
+  Serial.print("Hum : "); Serial.print(hum); Serial.println(" %");
+  Serial.print("Gas : "); Serial.print(gas); Serial.println(" ppm");
+  Serial.print("Noise: "); Serial.print(noise); Serial.println(" dB");
+  Serial.print("Status: "); Serial.println(status);
+
+  // Send data to cloud/mobile app
+  if (WiFi.status() == WL_CONNECTED && (millis() - lastSendTime > sendInterval)) {
+    sendDataToCloud(temp, hum, gas, noise, status);
+    lastSendTime = millis();
+  }
+
+  Serial.println("---------------");
+
+  delay(60000); // 1 minute delay between loops
+}
+
+void sendDataToCloud(float temp, float hum, int gas, int noise, String status) {
+  HTTPClient http;
+
+  // Create JSON payload
+  StaticJsonDocument<300> doc;
+  doc["temperature"] = temp;
+  doc["humidity"] = hum;
+  doc["gas"] = gas;
+  doc["noise"] = noise;
+  doc["status"] = status;
+  doc["timestamp"] = millis();
+  doc["deviceId"] = "ESP32_001";
+
+  String jsonString;
+  serializeJson(doc, jsonString);
+
+  Serial.println("Sending data to server...");
+  Serial.println(jsonString);
+
+  // Send to custom HTTP server
+  http.begin(serverUrl);
+  http.addHeader("Content-Type", "application/json");
+  int httpResponseCode = http.POST(jsonString);
+
+  // Alternative: Send to Firebase (uncomment to use)
+  // String firebaseUrl = String(firebaseHost) + firebasePath;
+  // if (strlen(firebaseAuth) > 0) {
+  //   firebaseUrl += "?auth=" + String(firebaseAuth);
+  // }
+  // http.begin(firebaseUrl);
+  // http.addHeader("Content-Type", "application/json");
+  // int httpResponseCode = http.PUT(jsonString);
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    Serial.print("Response: ");
+    Serial.println(response);
+  } else {
+    Serial.print("Error sending data. HTTP code: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
+}

@@ -1,0 +1,18 @@
+[wokwi]
+version = 1
+firmware = '.pio/build/esp32dev/firmware.bin'
+elf = '.pio/build/esp32dev/firmware.elf'
+
+# Enable WiFi simulation
+# The ESP32 will connect to "Wokwi-GUEST" network automatically
+
+# Optional: Serial port forwarding (RFC2217)
+# Uncomment to enable serial port on TCP port 4000
+# rfc2217ServerPort = 4000
+
+# Optional: Port forwarding to access ESP32 web server from your computer
+# Uncomment to forward localhost:8180 to ESP32 port 80
+# [[net.forward]]
+# from = "localhost:8180"
+# to = "target:80"
+
