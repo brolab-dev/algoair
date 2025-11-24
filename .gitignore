@@ -10,5 +10,8 @@ server/users.db
 
 # Environment variables
 server/.env
+
+# React app env
+air-quality-react/.env
 .env
 .env.*
