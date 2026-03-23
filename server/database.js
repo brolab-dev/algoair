@@ -87,6 +87,17 @@ function initializeTables() {
             console.error('Error adding reward_claimed column:', alterErr);
           }
         });
+        // Add latitude/longitude columns if they don't exist
+        db.run(`ALTER TABLE submissions ADD COLUMN latitude REAL`, (alterErr) => {
+          if (alterErr && !alterErr.message.includes('duplicate column')) {
+            console.error('Error adding latitude column:', alterErr);
+          }
+        });
+        db.run(`ALTER TABLE submissions ADD COLUMN longitude REAL`, (alterErr) => {
+          if (alterErr && !alterErr.message.includes('duplicate column')) {
+            console.error('Error adding longitude column:', alterErr);
+          }
+        });
       }
     });
 

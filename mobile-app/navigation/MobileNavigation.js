@@ -1,9 +1,12 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import HomeScreen from '../screens/HomeScreen';
-import HederaScreen from '../screens/HederaScreen';
+import { Ionicons } from '@expo/vector-icons';
+import DashboardScreen from '../screens/DashboardScreen';
+import SensorMapScreen from '../screens/SensorMapScreen';
+import RecentSubmissionsScreen from '../screens/RecentSubmissionsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -13,42 +16,63 @@ const MobileNavigation = ({ onLogout }) => {
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#4CAF50',
-          tabBarInactiveTintColor: '#666',
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {
-            backgroundColor: '#ffffff',
+            backgroundColor: colors.card,
             borderTopWidth: 1,
-            borderTopColor: '#e0e0e0',
-            paddingBottom: 5,
-            paddingTop: 5,
-            height: 60,
+            borderTopColor: colors.border,
+            paddingBottom: 42,
+            paddingTop: 8,
+            height: 97,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '500',
+            fontSize: 11,
+            fontWeight: '600',
+            marginTop: 2,
           },
         }}
       >
         <Tab.Screen
-          name="Home"
-          component={HomeScreen}
+          name="Dashboard"
+          component={DashboardScreen}
           options={{
-            tabBarLabel: 'Air Quality',
-            tabBarIcon: ({ focused }) => (
-              <Text style={{ fontSize: 24 }}>🌿</Text>
+            tabBarLabel: 'Dashboard',
+            tabBarIcon: ({ focused, color, size }) => (
+              <Ionicons name={focused ? 'grid' : 'grid-outline'} size={22} color={color} />
             ),
           }}
         />
         <Tab.Screen
-          name="Hedera"
+          name="Map"
+          component={SensorMapScreen}
           options={{
-            tabBarLabel: 'Blockchain',
-            tabBarIcon: ({ focused }) => (
-              <Text style={{ fontSize: 24 }}>⛓️</Text>
+            tabBarLabel: 'Map',
+            tabBarIcon: ({ focused, color, size }) => (
+              <Ionicons name={focused ? 'map' : 'map-outline'} size={22} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Records"
+          component={RecentSubmissionsScreen}
+          options={{
+            tabBarLabel: 'Records',
+            tabBarIcon: ({ focused, color, size }) => (
+              <Ionicons name={focused ? 'document-text' : 'document-text-outline'} size={22} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          options={{
+            tabBarLabel: 'Profile',
+            tabBarIcon: ({ focused, color, size }) => (
+              <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={22} color={color} />
             ),
           }}
         >
-          {() => <HederaScreen onLogout={onLogout} />}
+          {() => <ProfileScreen onLogout={onLogout} />}
         </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>
@@ -56,4 +80,3 @@ const MobileNavigation = ({ onLogout }) => {
 };
 
 export default MobileNavigation;
-

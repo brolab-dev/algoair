@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const TOPIC_ID = process.env.REACT_APP_HEDERA_TOPIC_ID || '0.0.7257060';
+const TOPIC_ID = process.env.REACT_APP_HEDERA_TOPIC_ID || '0.0.8218381';
 const MIRROR_NODE_URL = `https://testnet.mirrornode.hedera.com/api/v1/topics/${TOPIC_ID}/messages`;
 
 class HederaService {

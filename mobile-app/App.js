@@ -11,7 +11,7 @@ const MobileNavigation = lazy(() => import('./navigation/MobileNavigation'));
 // Loading component while navigation loads
 const LoadingScreen = () => (
   <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color="#4CAF50" />
+    <ActivityIndicator size="large" color="#22C55E" />
     <Text style={styles.loadingText}>Loading...</Text>
   </View>
 );
@@ -54,7 +54,7 @@ const App = () => {
   if (!isAuthenticated) {
     return (
       <>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle="light-content" />
         <AuthScreen onAuthSuccess={handleAuthSuccess} />
       </>
     );
@@ -65,7 +65,7 @@ const App = () => {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
       <Suspense fallback={<LoadingScreen />}>
         <Navigation onLogout={handleLogout} />
       </Suspense>
@@ -78,12 +78,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0F172A',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: '#94A3B8',
   },
 });
 

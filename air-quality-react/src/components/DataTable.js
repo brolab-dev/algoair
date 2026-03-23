@@ -1,6 +1,7 @@
 import { DataGrid } from '@mui/x-data-grid';
-import { Typography, Box, Link, IconButton, Tooltip, Stack } from '@mui/material';
+import { Typography, Box, Link, IconButton, Tooltip, Stack, Chip } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { getAqiLevel } from '../utils/aqiUtils';
 
 const formatTimestamp = (submission) => {
   const ts = submission.consensusTimestamp;
@@ -13,7 +14,7 @@ const formatTimestamp = (submission) => {
     const d = new Date(submission.submittedAt);
     if (!isNaN(d)) return d.toLocaleString();
   }
-  return '—';
+  return '--';
 };
 
 const extractLocationString = (s) => {
@@ -34,16 +35,20 @@ const extractLocationString = (s) => {
 };
 
 const getValue = (s, key) => {
-  if (!s) return '—';
+  if (!s) return '--';
   if (s[key] != null) return s[key];
   if (s.data && s.data[key] != null) return s.data[key];
-  return '—';
+  return '--';
 };
 
-const truncate = (str, n = 12) => (typeof str === 'string' && str.length > n ? `${str.slice(0, n)}…` : str || '—');
+const truncate = (str, n = 12) =>
+  typeof str === 'string' && str.length > n ? `${str.slice(0, n)}...` : str || '--';
 
 const DataTable = ({ submissions }) => {
-  const rows = submissions.map((s, idx) => ({ id: s.sequenceNumber || idx, raw: s }));
+  const rows = submissions.map((s, idx) => ({
+    id: s.sequenceNumber || idx,
+    raw: s,
+  }));
 
   const columns = [
     {
@@ -62,8 +67,25 @@ const DataTable = ({ submissions }) => {
     {
       field: 'aqi',
       headerName: 'AQI',
-      flex: 0.6,
+      flex: 0.7,
       valueGetter: (_value, row) => getValue(row.raw, 'aqi'),
+      renderCell: (params) => {
+        const val = params.value;
+        const level = getAqiLevel(val);
+        return (
+          <Chip
+            label={val}
+            size="small"
+            sx={{
+              bgcolor: `${level.color}22`,
+              color: level.color,
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              minWidth: 48,
+            }}
+          />
+        );
+      },
       type: 'number',
     },
     {
@@ -95,19 +117,20 @@ const DataTable = ({ submissions }) => {
         const s = params.row?.raw;
         const topicId = s?.topicId;
         const seq = s?.sequenceNumber;
-        if (!topicId || !seq) return '—';
+        if (!topicId || !seq) return '--';
         const url = `https://hashscan.io/testnet/topic/${topicId}/message/${seq}`;
         return (
-          <Link href={url} target="_blank" rel="noopener">#{seq}</Link>
+          <Link
+            href={url}
+            target="_blank"
+            rel="noopener"
+            sx={{ color: 'primary.main', fontWeight: 500 }}
+          >
+            #{seq}
+          </Link>
         );
       },
       sortable: false,
-    },
-    {
-      field: 'topic',
-      headerName: 'Topic',
-      flex: 1,
-      valueGetter: (_value, row) => row.raw?.topicId || '—',
     },
     {
       field: 'txId',
@@ -115,10 +138,17 @@ const DataTable = ({ submissions }) => {
       flex: 1.4,
       renderCell: (params) => {
         const id = params.row?.raw?.transactionId;
-        if (!id) return '—';
+        if (!id) return '--';
         const url = `https://hashscan.io/testnet/transaction/${id}`;
         return (
-          <Link href={url} target="_blank" rel="noopener">{id}</Link>
+          <Link
+            href={url}
+            target="_blank"
+            rel="noopener"
+            sx={{ color: 'primary.main', fontWeight: 500 }}
+          >
+            {truncate(id, 20)}
+          </Link>
         );
       },
       sortable: false,
@@ -129,15 +159,22 @@ const DataTable = ({ submissions }) => {
       flex: 1.1,
       renderCell: (params) => {
         const hashHex = params.row?.raw?.transactionHashHex;
-        if (!hashHex) return '—';
+        if (!hashHex) return '--';
         return (
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography component="span" sx={{ fontFamily: 'monospace' }}>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Typography
+              component="span"
+              sx={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'text.secondary' }}
+            >
               {truncate(hashHex, 14)}
             </Typography>
             <Tooltip title="Copy hash">
-              <IconButton size="small" onClick={() => navigator.clipboard?.writeText(hashHex)}>
-                <ContentCopyIcon fontSize="inherit" />
+              <IconButton
+                size="small"
+                onClick={() => navigator.clipboard?.writeText(hashHex)}
+                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.main' } }}
+              >
+                <ContentCopyIcon sx={{ fontSize: 14 }} />
               </IconButton>
             </Tooltip>
           </Stack>
@@ -149,7 +186,7 @@ const DataTable = ({ submissions }) => {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 1 }}>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
         Recent Submissions
       </Typography>
       <div style={{ width: '100%' }}>
@@ -159,8 +196,26 @@ const DataTable = ({ submissions }) => {
           columns={columns}
           disableRowSelectionOnClick
           density="comfortable"
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
           pageSizeOptions={[10, 25, 50]}
+          sx={{
+            border: 'none',
+            '& .MuiDataGrid-columnHeaders': {
+              bgcolor: 'rgba(255,255,255,0.04)',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+            },
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid rgba(255,255,255,0.04)',
+            },
+            '& .MuiDataGrid-row:hover': {
+              bgcolor: 'rgba(255,255,255,0.04)',
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+            },
+          }}
         />
       </div>
     </Box>

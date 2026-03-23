@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Modal,
+  Animated,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from './HomeScreen';
@@ -24,6 +26,10 @@ const HederaScreen = ({ onLogout }) => {
   const [unclaimedSubmissions, setUnclaimedSubmissions] = useState([]);
   const [location, setLocation] = useState(null);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [claimSuccessVisible, setClaimSuccessVisible] = useState(false);
+  const [claimResult, setClaimResult] = useState(null);
+  const [scaleAnim] = useState(new Animated.Value(0));
+  const [confettiAnim] = useState(new Animated.Value(0));
 
   // Load user info on mount
   useEffect(() => {
@@ -178,8 +184,39 @@ const HederaScreen = ({ onLogout }) => {
       const result = await response.json();
 
       if (result.success) {
-        Alert.alert('Success!', result.message || 'Rewards claimed successfully!');
-        // Refresh data
+        // Capture values before refreshing
+        const claimedCount = unclaimedSubmissions.length;
+        const claimedAmount = claimedCount * 10;
+        // Parse amount from server message if available (e.g. "Successfully claimed 10 AIR tokens")
+        const msgMatch = (result.message || '').match(/(\d+)\s*AIR/i);
+        const finalAmount = msgMatch ? parseInt(msgMatch[1], 10) : claimedAmount;
+
+        setClaimResult({
+          message: result.message || 'Rewards claimed successfully!',
+          amount: finalAmount,
+          count: claimedCount,
+        });
+
+        // Animate modal in
+        scaleAnim.setValue(0);
+        confettiAnim.setValue(0);
+        setClaimSuccessVisible(true);
+
+        Animated.parallel([
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            tension: 50,
+            friction: 7,
+            useNativeDriver: true,
+          }),
+          Animated.timing(confettiAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]).start();
+
+        // Refresh data after showing modal
         fetchTokenBalance();
         fetchUnclaimedSubmissions();
       } else {
@@ -305,20 +342,39 @@ const HederaScreen = ({ onLogout }) => {
 
         {/* Claim Rewards */}
         {unclaimedSubmissions.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>[object Object]Claim Your AIR Tokens</Text>
+          <View style={styles.claimCard}>
+            <View style={styles.claimCardGlow} />
+            <Text style={styles.claimCardTitle}>🎁 Claim Your AIR Tokens</Text>
             <View style={styles.claimAllContainer}>
-              <Text style={styles.claimAllText}>
-                You have {unclaimedSubmissions.length} rewards to claim!
-              </Text>
+              <View style={styles.claimBadge}>
+                <Text style={styles.claimBadgeNumber}>{unclaimedSubmissions.length}</Text>
+                <Text style={styles.claimBadgeLabel}>
+                  reward{unclaimedSubmissions.length !== 1 ? 's' : ''} available
+                </Text>
+              </View>
+              <View style={styles.claimAmountRow}>
+                <Text style={styles.claimAmountLabel}>Total to claim</Text>
+                <Text style={styles.claimAmountValue}>{unclaimedSubmissions.length * 10} AIR</Text>
+              </View>
               <TouchableOpacity
-                style={styles.claimAllButton}
+                style={[styles.claimAllButton, loading && styles.claimAllButtonDisabled]}
                 onPress={handleClaimAllRewards}
                 disabled={loading}
+                activeOpacity={0.8}
               >
-                <Text style={styles.claimAllButtonText}>
-                  Claim All ({unclaimedSubmissions.length * 10} AIR)
-                </Text>
+                {loading ? (
+                  <View style={styles.claimButtonInner}>
+                    <ActivityIndicator color="#ffffff" size="small" />
+                    <Text style={styles.claimAllButtonText}>Claiming...</Text>
+                  </View>
+                ) : (
+                  <View style={styles.claimButtonInner}>
+                    <Text style={styles.claimButtonIcon}>💎</Text>
+                    <Text style={styles.claimAllButtonText}>
+                      Claim All Rewards
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -401,6 +457,104 @@ const HederaScreen = ({ onLogout }) => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Claim Success Modal */}
+      <Modal
+        visible={claimSuccessVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setClaimSuccessVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View
+            style={[
+              styles.successModal,
+              { transform: [{ scale: scaleAnim }] },
+            ]}
+          >
+            {/* Gradient-like header background */}
+            <View style={styles.successHeader}>
+              <View style={styles.successHeaderInner}>
+                {/* Floating particles */}
+                <Animated.View style={[styles.particle, styles.particle1, { opacity: confettiAnim }]} />
+                <Animated.View style={[styles.particle, styles.particle2, { opacity: confettiAnim }]} />
+                <Animated.View style={[styles.particle, styles.particle3, { opacity: confettiAnim }]} />
+                <Animated.View style={[styles.particle, styles.particle4, { opacity: confettiAnim }]} />
+                <Animated.View style={[styles.particle, styles.particle5, { opacity: confettiAnim }]} />
+                <Animated.View style={[styles.particle, styles.particle6, { opacity: confettiAnim }]} />
+                <Animated.View style={[styles.particle, styles.particle7, { opacity: confettiAnim }]} />
+                <Animated.View style={[styles.particle, styles.particle8, { opacity: confettiAnim }]} />
+
+                {/* Checkmark circle */}
+                <Animated.View style={[
+                  styles.checkCircleOuter,
+                  { transform: [{ scale: confettiAnim.interpolate({
+                    inputRange: [0, 0.5, 1],
+                    outputRange: [0.5, 1.15, 1],
+                  }) }] },
+                ]}>
+                  <View style={styles.checkCircle}>
+                    <Text style={styles.checkIcon}>✓</Text>
+                  </View>
+                </Animated.View>
+
+                <Text style={styles.successHeaderTitle}>Successfully Claimed!</Text>
+              </View>
+            </View>
+
+            {/* Amount section */}
+            <View style={styles.successBody}>
+              <View style={styles.amountContainer}>
+                <Text style={styles.amountPrefix}>+</Text>
+                <Text style={styles.amountNumber}>{claimResult?.amount || 0}</Text>
+                <View style={styles.amountTokenBadge}>
+                  <Text style={styles.amountTokenText}>AIR</Text>
+                </View>
+              </View>
+              <Text style={styles.amountSubtext}>
+                from {claimResult?.count || 0} data submission{(claimResult?.count || 0) !== 1 ? 's' : ''}
+              </Text>
+
+              {/* Divider */}
+              <View style={styles.successDivider} />
+
+              {/* Status rows */}
+              <View style={styles.statusRow}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>Verified on Hedera blockchain</Text>
+                <Text style={styles.statusCheck}>✓</Text>
+              </View>
+              <View style={styles.statusRow}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>Tokens sent to your wallet</Text>
+                <Text style={styles.statusCheck}>✓</Text>
+              </View>
+              <View style={styles.statusRow}>
+                <View style={[styles.statusDot, { backgroundColor: '#FFB74D' }]} />
+                <Text style={styles.statusText}>Balance updated</Text>
+                <Text style={styles.statusCheck}>✓</Text>
+              </View>
+
+              {/* Thank you note */}
+              <View style={styles.thankYouBox}>
+                <Text style={styles.thankYouEmoji}>🌱</Text>
+                <Text style={styles.thankYouText}>
+                  Thanks for contributing clean air data!
+                </Text>
+              </View>
+
+              {/* Close button */}
+              <TouchableOpacity
+                style={styles.successCloseButton}
+                onPress={() => setClaimSuccessVisible(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.successCloseButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -493,25 +647,102 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  claimCard: {
+    backgroundColor: '#ffffff',
+    margin: 16,
+    borderRadius: 16,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  claimCardGlow: {
+    height: 4,
+    backgroundColor: '#4CAF50',
+  },
+  claimCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2E7D32',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
   claimAllContainer: {
     alignItems: 'center',
-    paddingVertical: 12,
+    padding: 20,
   },
-  claimAllText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 12,
+  claimBadge: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  claimBadgeNumber: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#2E7D32',
+    marginRight: 8,
+  },
+  claimBadgeLabel: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  claimAmountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E8F5E9',
+    marginBottom: 16,
+  },
+  claimAmountLabel: {
+    fontSize: 14,
+    color: '#888',
+  },
+  claimAmountValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#2E7D32',
   },
   claimAllButton: {
     backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    width: '100%',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  claimAllButtonDisabled: {
+    backgroundColor: '#A5D6A7',
+    shadowOpacity: 0.1,
+  },
+  claimButtonInner: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  claimButtonIcon: {
+    fontSize: 18,
+    marginRight: 8,
   },
   claimAllButtonText: {
     color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
   topicInfo: {
     flexDirection: 'row',
@@ -595,6 +826,183 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
     lineHeight: 22,
+  },
+  // Success Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  successModal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 28,
+    width: '100%',
+    maxWidth: 350,
+    overflow: 'hidden',
+  },
+  successHeader: {
+    backgroundColor: '#1B5E20',
+    paddingTop: 32,
+    paddingBottom: 28,
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  successHeaderInner: {
+    alignItems: 'center',
+  },
+  particle: {
+    position: 'absolute',
+    borderRadius: 6,
+  },
+  particle1: { width: 10, height: 10, backgroundColor: '#FFD700', top: 8, left: 30 },
+  particle2: { width: 7, height: 7, backgroundColor: '#81C784', top: 20, right: 40 },
+  particle3: { width: 8, height: 8, backgroundColor: '#FFF176', bottom: 15, left: 50 },
+  particle4: { width: 6, height: 6, backgroundColor: '#A5D6A7', top: 35, left: 15 },
+  particle5: { width: 9, height: 9, backgroundColor: '#FFB74D', bottom: 10, right: 25 },
+  particle6: { width: 5, height: 5, backgroundColor: '#E0E0E0', top: 12, right: 60 },
+  particle7: { width: 8, height: 8, backgroundColor: '#80CBC4', bottom: 30, right: 55 },
+  particle8: { width: 6, height: 6, backgroundColor: '#FFCC80', top: 5, left: 70 },
+  checkCircleOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  checkCircle: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkIcon: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#2E7D32',
+  },
+  successHeaderTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    letterSpacing: 0.3,
+  },
+  successBody: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    alignItems: 'center',
+  },
+  amountContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 6,
+  },
+  amountPrefix: {
+    fontSize: 28,
+    fontWeight: '300',
+    color: '#2E7D32',
+    marginRight: 2,
+  },
+  amountNumber: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#1B5E20',
+    letterSpacing: -1,
+  },
+  amountTokenBadge: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: '#A5D6A7',
+  },
+  amountTokenText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#2E7D32',
+    letterSpacing: 1,
+  },
+  amountSubtext: {
+    fontSize: 13,
+    color: '#999',
+    marginBottom: 20,
+  },
+  successDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#E8F5E9',
+    marginBottom: 16,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4CAF50',
+    marginRight: 12,
+  },
+  statusText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#555',
+  },
+  statusCheck: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  thankYouBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF8E1',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#FFE082',
+  },
+  thankYouEmoji: {
+    fontSize: 20,
+    marginRight: 10,
+  },
+  thankYouText: {
+    fontSize: 13,
+    color: '#795548',
+    flex: 1,
+    fontWeight: '500',
+  },
+  successCloseButton: {
+    backgroundColor: '#2E7D32',
+    borderRadius: 14,
+    paddingVertical: 15,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+    shadowColor: '#1B5E20',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  successCloseButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
 

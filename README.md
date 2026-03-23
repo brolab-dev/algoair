@@ -1,102 +1,83 @@
-# IoT Air Quality Monitor with Hedera Blockchain
+# AlgoAir - Decentralized Air Quality Monitoring
 
-This project is a complete IoT solution for monitoring air quality, rewarding users for their data contributions, and visualizing the data on a public website. It uses an ESP32 (simulated in Wokwi) to send data to a mobile app, which then submits the data to the Hedera blockchain.
+[![Demo Video](https://img.youtube.com/vi/vrdrZb76YPI/0.jpg)](https://youtube.com/shorts/vrdrZb76YPI)
 
-## 🌟 Features
+Winner of the DePIN Track at Hedera Future Ascension.
 
-- **ESP32 Sensor System:** Simulates an IoT device collecting air quality data (temperature, humidity, PM2.5, etc.).
-- **React Native Mobile App:**
-  - User registration and login.
-  - Automatic creation of a Hedera wallet for each user.
-  - Real-time display of air quality data.
-  - Submission of data to the Hedera blockchain.
-  - **Reward System:** Users earn `AIR` tokens for each submission and can claim them to their wallet.
-- **Node.js Backend:**
-  - Manages user authentication and data submissions.
-  - Interacts with the Hedera network to send data and transfer tokens.
-  - Serves the data explorer website.
-- **Hedera Blockchain Integration:**
-  - All data submissions are recorded on a public Hedera topic.
-  - A custom `AIR` token is used to reward users for their contributions.
-- **Data Explorer Website:**
-  - A public website that displays all submitted data.
-  - Includes a map with location markers for each submission.
-  - A table with detailed information about each data point.
+AlgoAir is a decentralized air quality monitoring platform that combines IoT sensors, a mobile app, and the Hedera blockchain to let anyone monitor, submit, and earn rewards for real-time environmental data.
 
-## 📁 Project Structure
+## 3 Core Features
+
+### 1. Real-Time IoT Monitoring
+- $25 ESP32 sensor kit measuring 6 metrics: Temperature, Humidity, PM2.5, PM10, Gas/VOC, Noise
+- AQI calculation following EPA standards (0-500 scale)
+- Live data every 60 seconds via WiFi
+
+### 2. Blockchain-Verified Data
+- Every submission recorded immutably on Hedera
+- Public shared topic for community data
+- Verify any data point on HashScan
+
+### 3. AIR Token Rewards
+- Custom AIR token on Hedera network
+- 10 AIR tokens per verified submission
+- Automatic wallet creation on registration
+- Claim rewards individually or in bulk
+
+## Project Structure
 
 ```
-air/
-├── server/              # Node.js backend
-│   ├── simple-server.js   # Main server file
-│   ├── database.js        # SQLite database logic
-│   ├── auth.js            # User authentication
-│   ├── rewards.js         # Token reward logic
-│   └── .env               # Environment variables
-├── mobile-app/          # React Native mobile app
-│   ├── App.js
-│   └── screens/           # App screens
-└── website/             # Data explorer website
-    ├── index.html
-    ├── script.js
-    └── style.css
+algoair/
+├── server/                # Node.js backend
+│   ├── simple-server.js   # Main server (15+ API endpoints)
+│   ├── auth.js            # JWT authentication
+│   ├── database.js        # SQLite database
+│   └── rewards.js         # AIR token reward logic
+├── mobile-app/            # React Native + Expo
+│   ├── screens/           # 8 app screens
+│   └── App.js             # Entry point
+├── air-quality-react/     # React web dashboard
+│   └── src/components/    # MUI components, charts, map
+├── website/               # Data explorer (served by backend)
+└── src/main.cpp           # ESP32 Arduino firmware
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-### Step 1: Set up the Backend Server
+### 1. Backend Server
+```bash
+cd server
+npm install
+# Configure .env with Hedera credentials
+npm start
+```
+Server runs at `http://localhost:3000`
 
-1.  **Navigate to the server directory:**
-    ```bash
-    cd server
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Set up your environment variables:**
-    *   Rename `.env.example` to `.env`.
-    *   Fill in your Hedera account details (`HEDERA_ACCOUNT_ID`, `HEDERA_PRIVATE_KEY`, etc.).
-4.  **Start the server:**
-    ```bash
-    npm start
-    ```
-    The server will be running at `http://localhost:3000`.
+### 2. Mobile App
+```bash
+cd mobile-app
+npm install
+npm start
+```
+Scan QR code with Expo Go
 
-### Step 2: Set up the Mobile App
+### 3. Web Dashboard
+```bash
+cd air-quality-react
+npm install
+npm start
+```
 
-1.  **Navigate to the mobile app directory:**
-    ```bash
-    cd mobile-app
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Start the app:**
-    ```bash
-    npm start
-    ```
-4.  Scan the QR code with the Expo Go app on your phone or run it in a simulator.
+## Tech Stack
 
-### Step 3: Use the App
+| Layer | Technology |
+|-------|-----------|
+| Hardware | ESP32, DHT22, MQ-135, PM sensors |
+| Backend | Node.js, Express, SQLite, Hedera SDK |
+| Mobile | React Native, Expo, React Navigation |
+| Web | React, Material-UI, Leaflet, Recharts |
+| Blockchain | Hedera Hashgraph Testnet |
 
-1.  **Register a new account** in the mobile app.
-2.  Go to the **"Blockchain"** tab.
-3.  Click **"Submit to Blockchain"** to send data to the Hedera network.
-4.  Click **"Claim All"** to receive your `AIR` token rewards.
+## License
 
-### Step 4: View the Data Explorer Website
-
-1.  Open your browser and go to **http://localhost:3000**.
-2.  You will see a map and a table with all the data submitted to the Hedera topic.
-
-## 🔗 Important Links
-
-- **Data Explorer Website:** http://localhost:3000
-- **Hedera Topic on HashScan:** [https://hashscan.io/testnet/topic/YOUR_TOPIC_ID](https://hashscan.io/testnet/topic/YOUR_TOPIC_ID)
-
-## 📄 License
-
-MIT License - Feel free to use this project for learning and development!
-
+MIT

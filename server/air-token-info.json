@@ -1,9 +1,9 @@
 {
-  "tokenId": "0.0.7285205",
+  "tokenId": "0.0.8218396",
   "name": "AIR Token",
   "symbol": "AIR",
   "decimals": 2,
   "totalSupply": "1000000.00",
-  "treasuryAccount": "0.0.6496444",
-  "hashscanUrl": "https://hashscan.io/testnet/token/0.0.7285205"
+  "treasuryAccount": "0.0.7995240",
+  "hashscanUrl": "https://hashscan.io/testnet/token/0.0.8218396"
 }

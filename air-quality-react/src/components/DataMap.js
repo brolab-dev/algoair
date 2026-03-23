@@ -1,15 +1,7 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-
-// Fix for default marker icon issue with webpack
-import L from 'leaflet';
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-});
+import { getAqiColor } from '../utils/aqiUtils';
 
 const getValue = (s, key) => {
   if (s[key] != null) return s[key];
@@ -18,53 +10,69 @@ const getValue = (s, key) => {
 };
 
 const getLatLng = (s) => {
-  // Direct fields
   if (s.latitude != null && s.longitude != null) {
     return [Number(s.latitude), Number(s.longitude)];
   }
-  // Nested location object
   if (typeof s.location === 'object' && s.location) {
     const lat = s.location.lat ?? s.location.latitude;
     const lng = s.location.lng ?? s.location.longitude;
     if (lat != null && lng != null) return [Number(lat), Number(lng)];
   }
-  // Location as string "lat,lng"
   if (typeof s.location === 'string' && s.location.includes(',')) {
-    const [latStr, lngStr] = s.location.split(',').map(t => t.trim());
+    const [latStr, lngStr] = s.location.split(',').map((t) => t.trim());
     const lat = Number(latStr);
     const lng = Number(lngStr);
     if (!Number.isNaN(lat) && !Number.isNaN(lng)) return [lat, lng];
   }
-  // Nested under data
   if (s.data) return getLatLng(s.data);
   return null;
 };
 
 const DataMap = ({ submissions }) => {
-  const defaultCenter = [16.0544, 108.2022]; // Default to Da Nang, Vietnam
+  const defaultCenter = [16.0544, 108.2022];
 
   return (
-    <MapContainer center={defaultCenter} zoom={5} style={{ height: '400px', width: '100%' }}>
+    <MapContainer
+      center={defaultCenter}
+      zoom={5}
+      style={{ height: '100%', minHeight: 280, width: '100%', borderRadius: 12 }}
+    >
       <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://carto.com/">CARTO</a>'
       />
       {submissions.map((s, index) => {
         const latlng = getLatLng(s);
-        if (latlng) {
-          const aqi = getValue(s, 'aqi');
-          const temp = getValue(s, 'temperature');
-          return (
-            <Marker key={index} position={latlng}>
-              <Popup>
-                <b>AQI:</b> {aqi ?? '—'}<br />
-                <b>Temp:</b> {temp ?? '—'}°C<br />
-                <b>Location:</b> {latlng[0].toFixed(4)}, {latlng[1].toFixed(4)}
-              </Popup>
-            </Marker>
-          );
-        }
-        return null;
+        if (!latlng) return null;
+        const aqi = getValue(s, 'aqi');
+        const temp = getValue(s, 'temperature');
+        const color = getAqiColor(aqi);
+        return (
+          <CircleMarker
+            key={index}
+            center={latlng}
+            radius={10}
+            pathOptions={{
+              color: color,
+              fillColor: color,
+              fillOpacity: 0.7,
+              weight: 2,
+              opacity: 0.9,
+            }}
+          >
+            <Popup>
+              <div style={{ fontFamily: 'Inter, Roboto, sans-serif', fontSize: 13 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, color, marginBottom: 4 }}>
+                  AQI: {aqi ?? '--'}
+                </div>
+                <div>Temp: {temp ?? '--'}°C</div>
+                <div style={{ color: '#888', fontSize: 11, marginTop: 2 }}>
+                  {latlng[0].toFixed(4)}, {latlng[1].toFixed(4)}
+                </div>
+              </div>
+            </Popup>
+          </CircleMarker>
+        );
       })}
     </MapContainer>
   );

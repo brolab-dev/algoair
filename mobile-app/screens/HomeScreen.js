@@ -14,7 +14,7 @@ import { LineChart } from 'react-native-chart-kit';
 // Configuration - Detect platform and use appropriate URL
 const API_URL = Platform.OS === 'web'
   ? 'http://localhost:3000/api/airquality'  // For web browser testing
-  : 'http://192.168.50.101:3000/api/airquality';  // For mobile devices
+  : 'http://192.168.1.128:3000/api/airquality';  // For mobile devices
 
 const HomeScreen = ({ navigation }) => {
   const [data, setData] = useState(null);
